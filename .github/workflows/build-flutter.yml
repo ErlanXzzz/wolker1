@@ -26,6 +26,10 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Setup Android SDK Platforms
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-37" "build-tools;37.0.0" || true
+
       - name: Setup Flutter (Latest Stable)
         uses: subosito/flutter-action@v2
         with:
@@ -69,7 +73,7 @@ jobs:
           PROJECT_ROOT=$(dirname "$PUBSPEC")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> "$GITHUB_ENV"
 
-          # 1. Hapus pubspec.lock
+          # 1. Hapus pubspec.lock agar tidak mengunci cache lama
           rm -f "$PROJECT_ROOT/pubspec.lock"
 
           # 2. Patch HANYA environment.sdk menggunakan Node.js
@@ -81,7 +85,7 @@ jobs:
             fs.writeFileSync(file, content);
           ' "$PUBSPEC"
 
-          # 3. Upgrade Gradle Wrapper
+          # 3. Patch Gradle Wrapper
           GRADLE_PROP=$(find "$PROJECT_ROOT" -type f -name "gradle-wrapper.properties" | head -n 1)
           if [ -n "$GRADLE_PROP" ]; then
             sed -i -E 's/gradle-[0-9.]+-bin\.zip/gradle-8.14-bin.zip/g' "$GRADLE_PROP"
@@ -94,8 +98,7 @@ jobs:
           cd "$PROJECT_ROOT"
           flutter clean
           flutter pub get
-          # Update package usang ke versi yang cocok dengan Flutter terbaru
-          flutter pub upgrade --major-versions || true
+          flutter pub upgrade || true
           flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Locate APK
