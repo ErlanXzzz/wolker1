@@ -26,13 +26,10 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK Platforms
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-37" "build-tools;37.0.0" || true
-
-      - name: Setup Flutter
+      - name: Setup Flutter (Pinned Version)
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.29.0'
           channel: 'stable'
 
       - name: Prepare Project & Patch Constraints
@@ -73,21 +70,15 @@ jobs:
           PROJECT_ROOT=$(dirname "$PUBSPEC")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> "$GITHUB_ENV"
 
-          # 1. Hapus pubspec.lock lama agar tidak mengunci dependency usang
+          # 1. Hapus pubspec.lock lama
           rm -f "$PROJECT_ROOT/pubspec.lock"
 
-          # 2. Patch environment.sdk dan perbarui font_awesome_flutter jika ada
+          # 2. Patch HANYA environment.sdk ke batas aman Flutter 3.29
           node -e '
             const fs = require("fs");
             const file = process.argv[1];
             let content = fs.readFileSync(file, "utf8");
-
-            // Patch SDK Constraint
-            content = content.replace(/(environment\s*:\s*\n\s*sdk\s*:\s*)[^\n]+/g, "$1\">=3.0.0 <4.0.0\"");
-
-            // Fix font_awesome_flutter versi lama agar kompatibel dengan Dart final class IconData
-            content = content.replace(/font_awesome_flutter\s*:\s*[^\n]+/g, "font_awesome_flutter: ^10.8.0");
-
+            content = content.replace(/(environment\s*:\s*\n\s*sdk\s*:\s*)[^\n]+/g, "$1\">=3.0.0 <3.28.0\"");
             fs.writeFileSync(file, content);
           ' "$PUBSPEC"
 
