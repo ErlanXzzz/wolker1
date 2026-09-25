@@ -69,22 +69,12 @@ jobs:
           PROJECT_ROOT=$(dirname "$PUBSPEC")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> "$GITHUB_ENV"
 
-          # 1. Hapus pubspec.lock agar tidak mengunci versi lama dari lokal user
+          # 1. Hapus pubspec.lock agar tidak mengunci dependensi lama
           rm -f "$PROJECT_ROOT/pubspec.lock"
 
-          # 2. Patch SDK Constraint di pubspec.yaml
-          python3 -c "
-          import re
-          pubspec_path = '$PUBSPEC'
-          with open(pubspec_path, 'r') as f:
-              content = f.read()
-          
-          # Ubah batasan SDK ke range luas
-          new_content = re.sub(r'sdk:\s*[\"'].*?[\"']|sdk:\s*[^\n]+', 'sdk: \">=2.12.0 <4.0.0\"', content)
-          
-          with open(pubspec_path, 'w') as f:
-              f.write(new_content)
-          "
+          # 2. Patch SDK Constraint menggunakan sed (bebas error sintaks)
+          sed -i -E 's/sdk:[[:space:]]*["'\'']?.*["'\'']?/sdk: ">=2.12.0 <4.0.0"/' "$PUBSPEC"
+
           echo "Updated pubspec.yaml environment:"
           grep -A 3 "environment:" "$PUBSPEC" || true
 
